@@ -11,6 +11,7 @@ from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction import (
     HeteroReactionParameterBlock,
 )
 
+
 def main():
     m = pyo.ConcreteModel()
     horizon = 1500.0
