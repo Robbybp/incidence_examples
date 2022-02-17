@@ -10,7 +10,10 @@ from pyomo.contrib.incidence_analysis import (
 )
 
 import idaes.core as idaes
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    large_residuals_set,
+)
 
 from idaes.gas_solid_contactors.unit_models.moving_bed import MBR as MovingBed
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction import (
@@ -97,9 +100,16 @@ def main():
     print(N, M, len(matching))
 
     ipopt = pyo.SolverFactory("ipopt")
+    ipopt.options["max_iter"] = 1000
     ipopt.solve(m, tee=True)
 
-    solve_strongly_connected_components(m)
+    # Adjusting the tolerance in calculate_variable_from_constraint appears
+    # to be necessary here in the latest IDAES main.
+    calc_var_kwds = {"eps": 5e-6}
+    solve_strongly_connected_components(
+        m, calc_var_kwds=calc_var_kwds, solver=ipopt
+    )
+    print(len(large_residuals_set(m)))
 
     ipopt.solve(m, tee=True)
 
