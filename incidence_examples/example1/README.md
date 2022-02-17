@@ -1,1 +1,1 @@
-## Fixing degrees of freedom in a chemical looping reactor
+## Fixing degrees of freedom and structural singularity in a chemical looping reactor
