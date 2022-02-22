@@ -23,6 +23,16 @@ def make_model():
     m.component_list = pyo.Set(initialize=["A", "B", "C"])
     n_comp = len(m.component_list)
 
+    # Parameters
+    m.area = pyo.Param(initialize=1.0)
+    m.void_fraction = pyo.Param(initialize=0.2)
+    mw_init_dict = {"A": 0.15969, "B": 0.231533, "C": 0.10196}
+    m.mw_comp = pyo.Param(m.component_list, initialize=mw_init_dict)
+    m.dens_mass_comp_skeletal = pyo.Param(
+        m.component_list,
+        initialize={"A": 5250.0, "B": 5000.0, "C": 3987.0},
+    )
+
     # Variables
     # TODO: Should I use units here?
     m.material_accumulation = pyo.Var(m.component_list, initialize=0.0)
@@ -32,14 +42,127 @@ def make_model():
     m.enth_mass = pyo.Var(initialize=1.0)
     m.enth_mol_comp = pyo.Var(m.component_list, initialize=1.0)
     m.flow_mass = pyo.Var(initialize=1.0)
-    m.mass_frac_comp = pyo.Var(m.component_list, initialize=1/n_comp)
+    m.mass_frac_comp = pyo.Var(m.component_list, initialize=1.0/n_comp)
     m.temperature = pyo.Var(initialize=298.15)
     m.dens_mass_particle = pyo.Var(initialize=3252.0)
     m.dens_mass_skeletal = pyo.Var(initialize=3252.0)
     m.volume = pyo.Var(initialize=1.0)
     m.material_holdup = pyo.Var(m.component_list, initialize=1.0)
     m.energy_holdup = pyo.Var(initialize=1.0)
-    m.particle_porosity = pyo.Var(initialize=1.0)
+    m.particle_porosity = pyo.Var(initialize=0.27)
+    m.velocity = pyo.Var(initialize=1.0)
+
+    m.flow_mass_in = pyo.Var(initialize=1.0)
+    m.mass_frac_comp_in = pyo.Var(m.component_list, initialize=1.0/n_comp)
+    m.enth_mass_in = pyo.Var(initialize=1.0)
+
+    m.flow_mass_in.fix()
+    m.mass_frac_comp_in[:].fix()
+    m.enth_mass_in.fix()
+
+    m.material_holdup[:].fix()
+    m.energy_holdup.fix()
+
+    m.velocity.fix()
+    m.volume.fix()
+    m.particle_porosity.fix()
+
+    # Constraints
+
+    @m.Constraint(m.component_list)
+    def material_holdup_calculation(m, j):
+        return (
+            m.material_holdup[j]
+            == m.volume * (1 - m.void_fraction)
+            * m.dens_mass_particle * m.mass_frac_comp[j]
+        )
+
+    @m.Constraint(m.component_list)
+    def material_balance(m, j):
+        return (
+            m.material_accumulation[j]
+            == m.flow_mass_in * m.mass_frac_comp_in[j]
+            - m.flow_mass * m.mass_frac_comp[j]
+        )
+
+    @m.Constraint()
+    def energy_holdup_calculation(m):
+        return (
+            m.energy_holdup
+            == m.volume * (1 - m.void_fraction)
+            * m.dens_mass_particle * m.enth_mass
+        )
+
+    @m.Constraint()
+    def enthalpy_balance(m):
+        return (
+            m.energy_accumulation
+            == m.flow_mass_in * m.enth_mass_in
+            - m.flow_mass * m.enth_mass
+        )
+
+    @m.Constraint(m.component_list)
+    def flow_comp_eqn(m, j):
+        return (
+            m.flow_mass_comp[j]
+            == m.flow_mass * m.mass_frac_comp[j]
+        )
+
+    conv = 0.001 # Temperature conversion factor
+    enthalpy_shomate_coefs = {
+        "A": (
+            0.1109362, 32.04714*conv**2, 9.192333*conv**3,
+            0.901506*conv**4, 5.433677*conv**-1, 843.1471, 825.5032,
+        ),
+        "B": (
+            0.200832, 1.58e-7*conv**2, 6.661e-8*conv**3,
+            9.452e-9*conv**4, 3.186e-8*conv**-1, 1174.135, 1120.894,
+        ),
+        "C": (
+            0.102429, 38.7498*conv**2, 15.9109*conv**3,
+            2.628181*conv**4, 3.007551*conv**-1, 171793, 1675.69,
+        ),
+    }
+
+    @m.Constraint(m.component_list)
+    def enthalpy_shomate_eqn(m, j):
+        A, B, C, D, E, F, G = enthalpy_shomate_coefs[j]
+        T = m.temperature
+        return (
+            m.enth_mol_comp[j]
+            == A*T + B*T**2 + C*T**3 + D*T**4 + E/T - F + G
+        )
+
+    @m.Constraint()
+    def mixture_enthalpy_eqn(m):
+        return (
+            m.enth_mass
+            == sum(
+                m.mass_frac_comp[j] * m.enth_mol_comp[j] / m.mw_comp[j]
+                for j in m.component_list
+            )
+        )
+
+    @m.Constraint()
+    def sum_component_eqn(m):
+        return sum(m.mass_frac_comp[j] for j in m.component_list) == 1.0
+
+    @m.Constraint()
+    def density_particle_constraint(m):
+        return (
+            m.dens_mass_particle
+            == (1 - m.particle_porosity) * m.dens_mass_skeletal
+        )
+
+    @m.Constraint()
+    def density_skeletal_constraint(m):
+        return (
+            m.dens_mass_skeletal * sum(
+                m.mass_frac_comp[j] / m.dens_mass_comp_skeletal[j]
+                for j in m.component_list
+            )
+            == 1.0
+        )
 
     return m
 
@@ -141,9 +264,16 @@ def display_model_components():
     for param in blk.component_data_objects(pyo.Objective):
         print("  %s" % param.name)
 
-    return
+    import pdb; pdb.set_trace()
+
+    return m
 
 
 if __name__ == "__main__":
     #display_model_components()
     m = make_model()
+    igraph = IncidenceGraphInterface(m)
+    N = len(igraph.variables)
+    M = len(igraph.constraints)
+    matching = igraph.maximum_matching()
+    print(M, N, len(matching))
