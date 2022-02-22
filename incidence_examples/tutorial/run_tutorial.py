@@ -16,89 +16,20 @@ import matplotlib.pyplot as plt
 
 from incidence_examples.properties import SingularSolidProperties
 
+from incidence_examples.tutorial.model import make_model
+
 def main():
-    m = pyo.ConcreteModel()
-    fs_config = {"dynamic": True, "time_units": pyo.units.s}
-    m.fs = idaes.FlowsheetBlock(default=fs_config)
-    time = m.fs.time
-    t0 = time.first()
-    m.fs.properties = SingularSolidProperties()
-    cv_config = {"property_package": m.fs.properties}
-    m.fs.cv = idaes.ControlVolume0DBlock(default=cv_config)
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_material_balances()
-    m.fs.cv.add_energy_balances()
-    comp_list = m.fs.properties.component_list
-    m.fs.cv.flow_mass_comp = pyo.Var(time, comp_list, initialize=1.0)
-
-    @m.fs.cv.Constraint(time, comp_list)
-    def flow_comp_eqn(cv, t, j):
-        return (
-            cv.flow_mass_comp[t, j]
-            == cv.properties_out[t0].get_material_flow_terms(None, j)
-        )
-    disc = pyo.TransformationFactory("dae.finite_difference")
-    disc.apply_to(m, wrt=m.fs.time, nfe=1, scheme="BACKWARD")
-
-    # Fix degrees of freedom
-    m.fs.cv.volume.fix(1.0)
-    for t in time:
-        for var in m.fs.cv.properties_in[t].define_state_vars().values():
-            var.fix()
-    m.fs.cv.properties_out[:].particle_porosity.fix()
-
-    # Fix initial conditions
-    m.fs.cv.material_holdup[t0, ...].fix(1.0)
-    m.fs.cv.energy_holdup[t0, ...].fix(1.0)
-
-    #
-    # Check that we have zero degrees of freedom
-    #
-    print(degrees_of_freedom(m))
-
-    #
-    # Check model for structural singularity
-    #
-    igraph = IncidenceGraphInterface(m)
-    N = len(igraph.constraints)
-    M = len(igraph.variables)
-    matching = igraph.maximum_matching()
-    print(N, M, len(matching))
-
-    #
-    # Check subsystems at each point in time for structural singularity
-    #
-    scalar_vars, dae_vars = flatten_dae_components(m, time, pyo.Var)
-    scalar_cons, dae_cons = flatten_dae_components(m, time, pyo.Constraint)
-
-    singular_subsystems = []
-    for t in time:
-        constraints = [con[t] for con in dae_cons if t in con and con[t].active]
-        variables = [var[t] for var in dae_vars if not var[t].fixed]
-        n_con = len(constraints)
-        n_var = len(variables)
-        matching = igraph.maximum_matching(variables, constraints)
-        n_matched = len(matching)
-
-        if n_matched != n_var:
-            print("Subsystem at %s is structurally singular" % t)
-            singular_subsystems.append((constraints, variables))
-
-    constraints, variables = singular_subsystems[0]
-    blk = create_subsystem_block(constraints, variables, include_fixed=True)
-
-    ### This is about where I would like to start.
+    m = make_model()
 
     #
     # Check system for structural nonsingularity
     #
-    igraph = IncidenceGraphInterface(blk)
+    igraph = IncidenceGraphInterface(m)
     matching = igraph.maximum_matching()
     M = len(igraph.constraints)
     N = len(igraph.variables)
     print(M, N, len(matching))
-    print("Subsystem at t = %s:" % t0)
+    print("Matching:")
     for con, var in matching.items():
         print()
         print(con.name)
@@ -106,14 +37,14 @@ def main():
     print()
 
     print("Unmatched constraints:")
-    for con in constraints:
+    for con in igraph.constraints:
         if con not in matching:
             print("  %s" % con.name)
 
     print("Unmatched variables:")
     matched_var_set = ComponentSet(matching.values())
     unmatched_vars = []
-    for var in variables:
+    for var in igraph.variables:
         if var not in matched_var_set:
             unmatched_vars.append(var)
             print("  %s" % var.name)
@@ -124,21 +55,22 @@ def main():
     # Need to put the variables in the right order so they appear on the
     # diagonal of the matrix.
     matched_var_list = []
-    for con in constraints:
+    for con in igraph.constraints:
         if con in matching:
             matched_var_list.append(matching[con])
         else:
             # "Associate" this constraint with a random unmatched var.
             matched_var_list.append(unmatched_vars.pop())
     incidence_matrix = get_structural_incidence_matrix(
-        matched_var_list, constraints
+        matched_var_list, igraph.constraints
     )
     plt.figure()
     plt.spy(incidence_matrix)
+    plt.title("Matching on diagonal, initial")
     plt.show()
 
     #
-    # If we could somehow put flow_mass in the skeletal density equation,
+    # If we could somehow put flow_mass in sum_component_eqn,
     # we would be done.
     #
 
@@ -193,6 +125,7 @@ def main():
     incidence_matrix = get_structural_incidence_matrix(variables, constraints)
     plt.figure()
     plt.spy(incidence_matrix)
+    plt.title("Dulmage-Mendelsohn ordering")
     plt.savefig("dmp.png")
     plt.show()
 
@@ -200,19 +133,16 @@ def main():
     # If we replaced the sum mass fraction equation with a sum flow rate
     # equation, it seems like it would solve our problem.
     #
-    m.fs.cv.properties_out[:].sum_component_eqn.deactivate()
+    m.sum_component_eqn.deactivate()
 
-    @blk.Constraint()
-    def sum_flow_eqn(b):
-        return (
-            sum(m.fs.cv.flow_mass_comp[t0, j] for j in comp_list)
-            == m.fs.cv.properties_out[t0].flow_mass
-        )
+    @m.Constraint()
+    def sum_flow_eqn(m):
+        return sum(m.flow_mass_comp[j] for j in m.component_list) == m.flow_mass
 
     #
     # Re-construct IncidenceGraphInterface with new model
     #
-    igraph = IncidenceGraphInterface(blk)
+    igraph = IncidenceGraphInterface(m)
 
     #
     # Re-check the model for structural singularity
@@ -221,7 +151,7 @@ def main():
     M = len(igraph.constraints)
     N = len(igraph.variables)
     print(M, N, len(matching))
-    print("Subsystem at t = %s:" % t0)
+    print("Maximum matching:")
     for con, var in matching.items():
         print()
         print(con.name)
@@ -236,16 +166,17 @@ def main():
     )
     plt.figure()
     plt.spy(incidence_matrix)
-    plt.show()
+    plt.title("Matching on diagonal, after fix")
     plt.savefig("matching2.png")
+    plt.show()
 
     #
     # Check numeric singularity
     #
-    blk._obj = pyo.Objective(expr=0.0)
-    nlp = PyomoNLP(blk)
+    m._obj = pyo.Objective(expr=0.0)
+    nlp = PyomoNLP(m)
     jacobian = nlp.evaluate_jacobian()
-    print(np.linalg.cond(jacobian.toarray()))
+    print("Condition number = %1.2e" % np.linalg.cond(jacobian.toarray()))
 
     #
     # Use block triangularization to try to determine where numeric
@@ -273,30 +204,28 @@ def main():
     incidence_matrix = get_structural_incidence_matrix(variables, constraints)
     plt.figure()
     plt.spy(incidence_matrix)
-    plt.show()
+    plt.title("Block triangular permutation")
     plt.savefig("block_triangular1.png")
+    plt.show()
 
     #
     # Now we go back to the drawing board
     #
-    blk.sum_flow_eqn.deactivate()
-    m.fs.cv.properties_out[:].sum_component_eqn.activate()
-    m.fs.cv.properties_out[:].particle_porosity.unfix()
+    m.sum_flow_eqn.deactivate()
+    m.sum_component_eqn.activate()
+    m.particle_porosity.unfix()
 
     # Need an equation to relate density and flow rate
-    @blk.Constraint()
+    @m.Constraint()
     def flow_density_eqn(b):
-        return (
-            m.fs.cv.properties_out[t0].flow_mass
-            == m.fs.cv.properties_out[t0].dens_mass_particle
-        )
+        return m.flow_mass == m.velocity * m.area * m.dens_mass_particle
 
     #
     # Make sure we still have zero degrees of freedom and a perfect
     # matching
     #
-    print(degrees_of_freedom(blk))
-    igraph = IncidenceGraphInterface(blk)
+    print(degrees_of_freedom(m))
+    igraph = IncidenceGraphInterface(m)
     matching = igraph.maximum_matching()
     N = len(igraph.constraints)
     M = len(igraph.variables)
@@ -309,13 +238,14 @@ def main():
     matrix = get_structural_incidence_matrix(matched_vars, igraph.constraints)
     plt.figure()
     plt.spy(matrix)
-    plt.show()
+    plt.title("Matching on diagonal, after fix")
     plt.savefig("matching3.png")
+    plt.show()
 
     #
     # Check numeric singularity
     #
-    nlp = PyomoNLP(blk)
+    nlp = PyomoNLP(m)
     jacobian = nlp.evaluate_jacobian()
     cond = np.linalg.cond(jacobian.toarray())
     print("Condition number = %1.2e" % cond)
@@ -346,8 +276,9 @@ def main():
     incidence_matrix = get_structural_incidence_matrix(variables, constraints)
     plt.figure()
     plt.spy(incidence_matrix)
-    plt.show()
+    plt.title("Block triangular permutation, after fix")
     plt.savefig("block_triangular2.png")
+    plt.show()
 
 
 if __name__ == "__main__":
