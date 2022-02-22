@@ -4,17 +4,12 @@ from pyomo.contrib.incidence_analysis.interface import (
     get_structural_incidence_matrix,
 )
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
-from pyomo.dae.flatten import flatten_dae_components
-from pyomo.util.subsystems import create_subsystem_block
 from pyomo.common.collections import ComponentSet
 
-import idaes.core as idaes
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-from incidence_examples.properties import SingularSolidProperties
 
 from incidence_examples.tutorial.model import make_model
 
@@ -28,6 +23,7 @@ def main():
     matching = igraph.maximum_matching()
     M = len(igraph.constraints)
     N = len(igraph.variables)
+    print("Degrees of freedom = %s" % degrees_of_freedom(m))
     print(M, N, len(matching))
     print("Matching:")
     for con, var in matching.items():
