@@ -167,7 +167,7 @@ def make_model():
     return m
 
 
-def display_model_components():
+def make_model_from_idaes():
     m = pyo.ConcreteModel()
     fs_config = {"dynamic": True, "time_units": pyo.units.s}
     m.fs = idaes.FlowsheetBlock(default=fs_config)
@@ -264,13 +264,10 @@ def display_model_components():
     for param in blk.component_data_objects(pyo.Objective):
         print("  %s" % param.name)
 
-    import pdb; pdb.set_trace()
-
     return m
 
 
 if __name__ == "__main__":
-    #display_model_components()
     m = make_model()
     igraph = IncidenceGraphInterface(m)
     N = len(igraph.variables)
