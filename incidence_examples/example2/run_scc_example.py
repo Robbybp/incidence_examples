@@ -22,7 +22,7 @@ from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction import (
     HeteroReactionParameterBlock,
 )
 
-def main():
+def main(nxfe=10):
     m = pyo.ConcreteModel()
     fs_config = {"dynamic": False}
     m.fs = idaes.FlowsheetBlock(default=fs_config)
@@ -34,7 +34,6 @@ def main():
     }
     m.fs.hetero_reactions = HeteroReactionParameterBlock(default=rxn_config)
 
-    nxfe = 10
     xfe_list = [1.0*i/nxfe for i in range(nxfe + 1)]
     mb_config = { 
         "has_holdup": True,
@@ -101,7 +100,7 @@ def main():
 
     ipopt = pyo.SolverFactory("ipopt")
     ipopt.options["max_iter"] = 1000
-    ipopt.solve(m, tee=True)
+    res1 = ipopt.solve(m, tee=True)
 
     # Adjusting the tolerance in calculate_variable_from_constraint appears
     # to be necessary here in the latest IDAES main.
@@ -111,7 +110,9 @@ def main():
     )
     print(len(large_residuals_set(m)))
 
-    ipopt.solve(m, tee=True)
+    res2 = ipopt.solve(m, tee=True)
+
+    return res1, res2
 
 
 if __name__ == "__main__":
