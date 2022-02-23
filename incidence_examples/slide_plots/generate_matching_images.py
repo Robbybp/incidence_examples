@@ -53,6 +53,7 @@ def generate_preliminary_images(show=True, save=False, transparent=True):
     nodes_1 = [n for n in graph if graph.nodes[n]["bipartite"] == 1]
     pos = nx_layout.bipartite_layout(graph, nodes_0)
     fig = plt.figure()
+    # TODO: Nodes should be bigger
     nxpl.draw(graph, pos=pos, node_color=color_map, node_size=500, width=2)
     if save:
         plt.savefig("init_bipartite_graph.png", transparent=transparent)
@@ -61,6 +62,7 @@ def generate_preliminary_images(show=True, save=False, transparent=True):
 
     matrix = get_structural_incidence_matrix(variables, constraints)
     fig = plt.figure()
+    # TODO: Markers are a good size. Text should be bigger
     plt.spy(matrix, markersize=50)
     if save:
         plt.savefig("init_incidence_matrix.png", transparent=transparent)
@@ -93,6 +95,8 @@ def generate_unmatched_variable_images(show=True, save=False, transparent=True):
     nodes_1 = [n for n in graph if graph.nodes[n]["bipartite"] == 1]
     pos = nx_layout.bipartite_layout(graph, nodes_0)
     fig = plt.figure()
+    # TODO: Same as above, nodes are too small and matrix axis labels should
+    # be larger
     nxpl.draw(graph, pos=pos, node_color=color_map, node_size=500, width=2)
     if save:
         plt.savefig("unmatched_var_graph.png", transparent=transparent)
