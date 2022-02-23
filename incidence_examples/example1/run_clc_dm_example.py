@@ -12,7 +12,7 @@ from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction import (
 )
 
 
-def main():
+def main(nxfe=10, ntfe=10):
     m = pyo.ConcreteModel()
     horizon = 1500.0
     fs_config = {
@@ -29,7 +29,7 @@ def main():
     }
     m.fs.hetero_reactions = HeteroReactionParameterBlock(default=rxn_config)
 
-    nxfe = 10
+    nxfe = nxfe
     nxcp = 1
     xfe_set = [1.0*i/nxfe for i in range(nxfe + 1)]
     mb_config = {
@@ -53,7 +53,6 @@ def main():
     time = m.fs.time
     t0 = time.first()
     disc = pyo.TransformationFactory("dae.finite_difference")
-    ntfe = 10
     disc.apply_to(m, wrt=time, nfe=ntfe, scheme="BACKWARD")
 
     # Fix geometry variables
@@ -182,6 +181,8 @@ def main():
     #   of variables and equations
     # - Dulmage-Mendelsohn can help you debug when it doesn't
     #
+
+    return igraph
 
 if __name__ == "__main__":
     main()
