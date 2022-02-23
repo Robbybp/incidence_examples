@@ -6,7 +6,6 @@ from pyomo.contrib.incidence_analysis.interface import (
     get_structural_incidence_matrix,
 )
 
-#import pygraphviz as pgv
 import networkx.drawing.nx_pylab as nxpl
 import networkx.drawing.layout as nx_layout
 import matplotlib.pyplot as plt
