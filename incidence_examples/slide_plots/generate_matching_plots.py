@@ -150,7 +150,7 @@ def generate_unmatched_constraint_images(
     fig = plt.figure()
     nxpl.draw(graph, pos=pos, node_color=color_map, node_size=500, width=2)
     if save:
-        plt.savefig("unmatched_var_graph.png", transparent=transparent)
+        plt.savefig("unmatched_con_graph.png", transparent=transparent)
     if show:
         plt.show()
 
@@ -168,7 +168,7 @@ def generate_unmatched_constraint_images(
         )
         plt.spy(proj_matrix, markersize=markersize, color="orange")
     if save:
-        plt.savefig("unmatched_var_matrix.png", transparent=transparent)
+        plt.savefig("unmatched_con_matrix.png", transparent=transparent)
     if show:
         plt.show()
 
