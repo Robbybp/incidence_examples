@@ -6,7 +6,7 @@ from pyomo.contrib.incidence_analysis.interface import (
     get_structural_incidence_matrix,
 )
 
-import pygraphviz as pgv
+#import pygraphviz as pgv
 import networkx.drawing.nx_pylab as nxpl
 import networkx.drawing.layout as nx_layout
 import matplotlib.pyplot as plt
@@ -69,7 +69,7 @@ def generate_preliminary_images(show=True, save=False, transparent=True):
         plt.show()
 
 
-def generate_unmatched_variable_images(show=True, save=False):
+def generate_unmatched_variable_images(show=True, save=False, transparent=True):
     m = pyo.ConcreteModel()
     m.x = pyo.Var()
     m.y = pyo.Var()
@@ -96,22 +96,34 @@ def generate_unmatched_variable_images(show=True, save=False):
     fig = plt.figure()
     nxpl.draw(graph, pos=pos, node_color=color_map, node_size=500, width=2)
     if save:
-        plt.savefig("init_bipartite_graph.png", transparent=transparent)
+        plt.savefig("unmatched_var_graph.png", transparent=transparent)
     if show:
         plt.show()
 
     matrix = get_structural_incidence_matrix(variables, constraints)
     fig = plt.figure()
-    plt.spy(matrix, markersize=50)
+    markersize = 50
+    plt.spy(matrix, markersize=markersize)
 
     # Plot over incidence matrix with matched nodes in a different color
+    igraph = IncidenceGraphInterface(m)
+    matching = igraph.maximum_matching()
+    for con, var in matching.items():
+        proj_matrix = project_onto(
+            matrix, [con_idx_map[con]], [var_idx_map[var]]
+        )
+        plt.spy(proj_matrix, markersize=markersize, color="orange")
     if save:
-        plt.savefig("init_incidence_matrix.png", transparent=transparent)
+        plt.savefig("unmatched_var_matrix.png", transparent=transparent)
     if show:
         plt.show()
 
 
-def generate_unmatched_constraint_images(show=True, save=False):
+def generate_unmatched_constraint_images(
+        show=True,
+        save=False,
+        transparent=True,
+        ):
     m = pyo.ConcreteModel()
     m.x = pyo.Var()
     m.y = pyo.Var()
@@ -120,6 +132,48 @@ def generate_unmatched_constraint_images(show=True, save=False):
     m.eq2 = pyo.Constraint(expr=m.x + 2*m.y == 3)
     m.eq3 = pyo.Constraint(expr=m.x*m.y == 7)
 
+    variables = [m.x, m.y]
+    constraints = [m.eq1, m.eq2, m.eq3]
+    var_idx_map = ComponentMap((var, i) for i, var in enumerate(variables))
+    con_idx_map = ComponentMap((con, i) for i, con in enumerate(constraints))
+    graph = get_incidence_graph(variables, constraints)
+
+    n_nodes = len(graph)
+    color_map = [
+        #"blue" if graph.nodes[i]["bipartite"] == 0 else "orange"
+        "blue"
+        for i in range(n_nodes)
+    ]
+    nodes_0 = [n for n in graph if graph.nodes[n]["bipartite"] == 0]
+    nodes_1 = [n for n in graph if graph.nodes[n]["bipartite"] == 1]
+    pos = nx_layout.bipartite_layout(graph, nodes_0)
+    fig = plt.figure()
+    nxpl.draw(graph, pos=pos, node_color=color_map, node_size=500, width=2)
+    if save:
+        plt.savefig("unmatched_var_graph.png", transparent=transparent)
+    if show:
+        plt.show()
+
+    matrix = get_structural_incidence_matrix(variables, constraints)
+    fig = plt.figure()
+    markersize = 50
+    plt.spy(matrix, markersize=markersize)
+
+    # Plot over incidence matrix with matched nodes in a different color
+    igraph = IncidenceGraphInterface(m)
+    matching = igraph.maximum_matching()
+    for con, var in matching.items():
+        proj_matrix = project_onto(
+            matrix, [con_idx_map[con]], [var_idx_map[var]]
+        )
+        plt.spy(proj_matrix, markersize=markersize, color="orange")
+    if save:
+        plt.savefig("unmatched_var_matrix.png", transparent=transparent)
+    if show:
+        plt.show()
+
 
 if __name__ == "__main__":
-    generate_preliminary_images()
+    generate_preliminary_images(save=True)
+    generate_unmatched_variable_images(save=True)
+    generate_unmatched_constraint_images(save=True)
