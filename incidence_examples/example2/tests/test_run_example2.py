@@ -8,9 +8,15 @@ class TestRunExample(unittest.TestCase):
 
     def test_solve_status(self):
         res1, res2 = example_script.main(nxfe=2)
-        self.assertIs(
-            res1.solver.termination_condition,
-            pyo.TerminationCondition.infeasible,
+        self.assertTrue(
+            (
+                res1.solver.termination_condition
+                is pyo.TerminationCondition.infeasible
+            )
+            or (
+                res1.solver.termination_condition
+                is pyo.TerminationCondition.maxIterations
+            )
         )
         pyo.assert_optimal_termination(res2)
 
