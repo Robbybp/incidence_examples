@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 from incidence_examples.tutorial.model import make_model
 
-def main(save=False, show=True):
+def main(save=False, show=True, transparent=True):
     m = make_model()
 
     #
@@ -63,7 +63,10 @@ def main(save=False, show=True):
     plt.figure()
     plt.spy(incidence_matrix)
     plt.title("Matching on diagonal, initial")
-    plt.show()
+    if save:
+        plt.savefig("matching1.png", transparent=transparent)
+    if show:
+        plt.show()
 
     #
     # If we could somehow put flow_mass in sum_component_eqn,
@@ -123,7 +126,7 @@ def main(save=False, show=True):
     plt.spy(incidence_matrix)
     plt.title("Dulmage-Mendelsohn ordering")
     if save:
-        plt.savefig("dmp.png")
+        plt.savefig("dmp.png", transparent=transparent)
     if show:
         plt.show()
 
@@ -166,7 +169,7 @@ def main(save=False, show=True):
     plt.spy(incidence_matrix)
     plt.title("Matching on diagonal, after fix")
     if save:
-        plt.savefig("matching2.png")
+        plt.savefig("matching2.png", transparent=transparent)
     if show:
         plt.show()
 
@@ -206,7 +209,7 @@ def main(save=False, show=True):
     plt.spy(incidence_matrix)
     plt.title("Block triangular permutation")
     if save:
-        plt.savefig("block_triangular1.png")
+        plt.savefig("block_triangular1.png", transparent=transparent)
     if show:
         plt.show()
 
@@ -242,7 +245,7 @@ def main(save=False, show=True):
     plt.spy(matrix)
     plt.title("Matching on diagonal, after fix")
     if save:
-        plt.savefig("matching3.png")
+        plt.savefig("matching3.png", transparent=transparent)
     if show:
         plt.show()
 
@@ -282,7 +285,7 @@ def main(save=False, show=True):
     plt.spy(incidence_matrix)
     plt.title("Block triangular permutation, after fix")
     if save:
-        plt.savefig("block_triangular2.png")
+        plt.savefig("block_triangular2.png", transparent=transparent)
     if show:
         plt.show()
 
