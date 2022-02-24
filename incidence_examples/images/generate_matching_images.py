@@ -53,21 +53,22 @@ def generate_preliminary_images(show=True, save=False, transparent=True):
     nodes_1 = [n for n in graph if graph.nodes[n]["bipartite"] == 1]
     pos = nx_layout.bipartite_layout(graph, nodes_0)
     fig = plt.figure()
-    # TODO: Nodes should be bigger
-    nxpl.draw(graph, pos=pos, node_color=color_map, node_size=500, width=2)
+    nxpl.draw(graph, pos=pos, node_color=color_map, node_size=1200, width=2)
     if save:
         plt.savefig("init_bipartite_graph.png", transparent=transparent)
     if show:
         plt.show()
 
     matrix = get_structural_incidence_matrix(variables, constraints)
+    orig_font_size = plt.rcParams["font.size"]
+    plt.rcParams.update({"font.size": 22})
     fig = plt.figure()
-    # TODO: Markers are a good size. Text should be bigger
     plt.spy(matrix, markersize=50)
     if save:
         plt.savefig("init_incidence_matrix.png", transparent=transparent)
     if show:
         plt.show()
+    plt.rcParams.update({"font.size": orig_font_size})
 
 
 def generate_unmatched_variable_images(show=True, save=False, transparent=True):
@@ -95,15 +96,15 @@ def generate_unmatched_variable_images(show=True, save=False, transparent=True):
     nodes_1 = [n for n in graph if graph.nodes[n]["bipartite"] == 1]
     pos = nx_layout.bipartite_layout(graph, nodes_0)
     fig = plt.figure()
-    # TODO: Same as above, nodes are too small and matrix axis labels should
-    # be larger
-    nxpl.draw(graph, pos=pos, node_color=color_map, node_size=500, width=2)
+    nxpl.draw(graph, pos=pos, node_color=color_map, node_size=1200, width=2)
     if save:
         plt.savefig("unmatched_var_graph.png", transparent=transparent)
     if show:
         plt.show()
 
     matrix = get_structural_incidence_matrix(variables, constraints)
+    orig_font_size = plt.rcParams["font.size"]
+    plt.rcParams.update({"font.size": 22})
     fig = plt.figure()
     markersize = 50
     plt.spy(matrix, markersize=markersize)
@@ -120,6 +121,7 @@ def generate_unmatched_variable_images(show=True, save=False, transparent=True):
         plt.savefig("unmatched_var_matrix.png", transparent=transparent)
     if show:
         plt.show()
+    plt.rcParams.update({"font.size": orig_font_size})
 
 
 def generate_unmatched_constraint_images(
@@ -151,13 +153,15 @@ def generate_unmatched_constraint_images(
     nodes_1 = [n for n in graph if graph.nodes[n]["bipartite"] == 1]
     pos = nx_layout.bipartite_layout(graph, nodes_0)
     fig = plt.figure()
-    nxpl.draw(graph, pos=pos, node_color=color_map, node_size=500, width=2)
+    nxpl.draw(graph, pos=pos, node_color=color_map, node_size=1200, width=2)
     if save:
         plt.savefig("unmatched_con_graph.png", transparent=transparent)
     if show:
         plt.show()
 
     matrix = get_structural_incidence_matrix(variables, constraints)
+    orig_font_size = plt.rcParams["font.size"]
+    plt.rcParams.update({"font.size": 22})
     fig = plt.figure()
     markersize = 50
     plt.spy(matrix, markersize=markersize)
@@ -174,6 +178,7 @@ def generate_unmatched_constraint_images(
         plt.savefig("unmatched_con_matrix.png", transparent=transparent)
     if show:
         plt.show()
+    plt.rcParams.update({"font.size": orig_font_size})
 
 
 if __name__ == "__main__":
