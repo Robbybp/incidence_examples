@@ -7,7 +7,7 @@ class TestRunTutorial(unittest.TestCase):
 
     def test_incidence(self):
 
-        igraph = tutorial_script.main()
+        igraph = tutorial_script.main(show=False, save=False)
         M = len(igraph.constraints)
         N = len(igraph.variables)
         matching = igraph.maximum_matching()
