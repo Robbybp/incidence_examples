@@ -5,7 +5,7 @@ The `incidence_analysis` code can be found
 [here](https://github.com/pyomo/pyomo/tree/main/pyomo/contrib/incidence_analysis).
 
 `incidence_analysis` implements (using NetworkX wherever possible)
-three algorithms that are useful for debugging models equation-oriented
+three algorithms that are useful for debugging equation-oriented
 chemical process models:
 - Maximum matching
 - Block triangularization
