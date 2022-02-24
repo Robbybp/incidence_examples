@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 from incidence_examples.tutorial.model import make_model
 
-def main():
+def main(save=False, show=True):
     m = make_model()
 
     #
@@ -122,8 +122,10 @@ def main():
     plt.figure()
     plt.spy(incidence_matrix)
     plt.title("Dulmage-Mendelsohn ordering")
-    plt.savefig("dmp.png")
-    plt.show()
+    if save:
+        plt.savefig("dmp.png")
+    if show:
+        plt.show()
 
     #
     # If we replaced the sum mass fraction equation with a sum flow rate
@@ -163,8 +165,10 @@ def main():
     plt.figure()
     plt.spy(incidence_matrix)
     plt.title("Matching on diagonal, after fix")
-    plt.savefig("matching2.png")
-    plt.show()
+    if save:
+        plt.savefig("matching2.png")
+    if show:
+        plt.show()
 
     #
     # Check numeric singularity
@@ -201,8 +205,10 @@ def main():
     plt.figure()
     plt.spy(incidence_matrix)
     plt.title("Block triangular permutation")
-    plt.savefig("block_triangular1.png")
-    plt.show()
+    if save:
+        plt.savefig("block_triangular1.png")
+    if show:
+        plt.show()
 
     #
     # Now we go back to the drawing board
@@ -235,8 +241,10 @@ def main():
     plt.figure()
     plt.spy(matrix)
     plt.title("Matching on diagonal, after fix")
-    plt.savefig("matching3.png")
-    plt.show()
+    if save:
+        plt.savefig("matching3.png")
+    if show:
+        plt.show()
 
     #
     # Check numeric singularity
@@ -273,8 +281,12 @@ def main():
     plt.figure()
     plt.spy(incidence_matrix)
     plt.title("Block triangular permutation, after fix")
-    plt.savefig("block_triangular2.png")
-    plt.show()
+    if save:
+        plt.savefig("block_triangular2.png")
+    if show:
+        plt.show()
+
+    return igraph
 
 
 if __name__ == "__main__":
