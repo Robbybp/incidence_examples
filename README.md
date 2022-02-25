@@ -29,6 +29,9 @@ I am not 100% sure this is an exhaustive list of dependencies.
 These packages (and any others I've forgotten) should be easily
 installable with pip.
 
+The tutorial also relies on the PyNumero ASL library, for getting Jacobians,
+which can be obtained via `pyomo build-extensions`.
+
 ### Instructions
 To run these examples and tutorial, you need to download the code
 in this repository, probably by running:
